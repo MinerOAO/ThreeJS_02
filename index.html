@@ -59,10 +59,6 @@
 
 <body>
     <div class="contain">
-        <div class="instruct">
-            <h2>操作说明</h2>
-            <span>鼠标拖动以旋转:<br>数字键1:默认<br>数字键2:纯白<br>数字键3:Rainbow<br>数字键4:木箱<br>数字键5:没做</span>
-        </div>
         <div id="wrap"></div>
     </div>
 </body>
@@ -75,7 +71,7 @@
     
     //摄像机设置
     scene = new THREE.Scene()
-    camera = new THREE.PerspectiveCamera(60, 600 / 600, 1, 10000)//视场角度，宽高比，近平面距离，远平面距离
+    camera = new THREE.PerspectiveCamera(45, 1280 / 540, 1, 10000)//视场角度，宽高比，近平面距离，远平面距离
     camera.position.set(5, 2, 8)//摄像机位置
     //camera.lookAt(new THREE.Vector3(0, 0, 0))//摄像机朝向
 
@@ -87,7 +83,7 @@
         depth: true,
     })
     renderer.setClearColor(new THREE.Color(0x66ccff))//清屏颜色,16进制值
-    renderer.setSize(640, 640)//渲染窗口大小
+    renderer.setSize(1280, 540)//渲染窗口大小
     renderer.setPixelRatio(window.devicePixelRatio * 1.2)//1.52倍分辨率渲染，之后下采样
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.VSMShadowMap; // default THREE.PCFShadowMap THREE.PCFSoftShadowMap THREE.VSMShadowMap
@@ -110,8 +106,8 @@
     dirLight.shadow.camera.near = 0.1; // default
     dirLight.shadow.camera.far = 500; // default
     dirLight.shadow.bias = -0.001
-    var shadowHelper = new THREE.CameraHelper( dirLight.shadow.camera );
-    scene.add( shadowHelper );
+    //var shadowHelper = new THREE.CameraHelper( dirLight.shadow.camera );
+    //scene.add( shadowHelper );
     
 
     //后期处理(post-processing)设置
@@ -200,9 +196,9 @@
         uniforms: {
         'tDiffuse': { value: null },
         'time': { value: 0.0 },
-        'nIntensity': { value: 0.2 },//胶片颗粒强度
+        'nIntensity': { value: 0.5 },//胶片颗粒强度
         'sIntensity': { value: 0 },//扫描线效果强度
-        'sCount': { value: 3072 },//颗粒数
+        'sCount': { value: 4096 },//颗粒数
         'grayscale': { value: null }//转灰阶
         },
 
