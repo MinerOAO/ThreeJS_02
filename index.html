@@ -6,9 +6,9 @@
     <title>实验2</title>
     <script src="js/three.js"></script>
     <script src="js/EffectComposer.js"></script>
+    <script src="js/CopyShader.js"></script>
     <script src="js/RenderPass.js"></script>
     <script src="js/TexturePass.js"></script>
-    <script src="js/CopyShader.js"></script>
     <script src="js/ShaderPass.js"></script>
     <script src="js/OrbitControls.js"></script>
     <script src="js/GLTFLoader.js"></script>
@@ -25,130 +25,6 @@
             fragPos = vec3(modelMatrix * vec4(vPos, 1.0));
             gl_Position = projectionMatrix * viewMatrix * modelMatrix * vec4(vPos, 1.0);// 好像连顺序都不能乱
         }
-    </script>
-
-    <script type="x-shader/x-fragment" id="fragmentshader_01">
-        #define POINT_LIGHTS_NUM 3
-        struct Material{
-            vec3 ambient;
-            vec3 diffuse;
-            vec3 specular;
-            vec3 objectColor;
-            float shininess;
-        };
-        struct DirLight{
-            vec3 direction;//vec3 lightDir = normalize(-light.direction);
-            vec3 ambient;
-            vec3 diffuse;
-            vec3 specular;
-        };
-        struct PointLight{
-            vec3 position;
-
-            float constant;
-            float linear;
-            float quadratic;
-
-            vec3 ambient;
-            vec3 diffuse;
-            vec3 specular;
-        };
-        struct SpotLight{
-            vec3 position;
-            vec3 direction;
-
-            vec3 ambient;
-            vec3 diffuse;
-            vec3 specular;
-
-            float cutOff;
-            float outerCutOff;
-
-            float constant;
-            float linear;
-            float quadratic;
-        };
-        uniform float iTime;
-        uniform Material material_01;
-        uniform DirLight dirlight_01;
-        uniform PointLight pointlight[POINT_LIGHTS_NUM];
-        varying vec3 vNormal; //原始法向量
-        varying vec2 vUv; //UV，指导着色器绘制贴图,range(0,1)(0,1)
-        varying vec3 fragPos;//片段位置，可理解为像素
-        uniform vec3 viewPos;//摄像机、观察者位置 
-        vec3 calcDirLight(DirLight light,vec3 normal,vec3 viewDir,Material m1){
-            vec3 lDir = normalize(-light.direction);
-            float diff = max(dot(normal,lDir),0.0);
-            vec3 vDir = viewDir;
-            vec3 halfwayDir = normalize(lDir + vDir);
-            float spec = pow(max(dot(normal,halfwayDir),0.0),m1.shininess);
-                        //vec3 reflDir = reflect(-lDir,normal);
-                        //float spec = pow(max(dot(viewDir,reflDir),0.0),m1.shininess);
-
-            vec3 ambient = light.ambient * m1.ambient;
-            vec3 diffuse = light.diffuse * diff * m1.diffuse;
-            vec3 specular = light.specular * spec * m1.specular;
-
-            return (ambient + diffuse + specular) * m1.objectColor;
-        }
-        vec3 calcPointLight(PointLight light,vec3 normal,vec3 viewDir,vec3 fragPos,Material m1){
-            vec3 lDir = normalize(light.position - fragPos);
-            float diff = max(dot(normal,lDir),0.0);
-            vec3 vDir = viewDir;
-            vec3 halfwayDir = normalize(lDir + vDir);
-            float spec = pow(max(dot(normal,halfwayDir),0.0),m1.shininess);
-                        //vec3 reflDir = reflect(-lDir,normal);
-                        //float spec = pow(max(dot(viewDir,reflDir),0.0),m1.shininess);
-            float distance = length(light.position - fragPos);
-            float attenuation = 1.0/(light.constant + light.linear * distance + light.quadratic * distance * distance);
-
-            vec3 ambient = light.ambient * m1.ambient;
-            vec3 diffuse = light.diffuse * diff * m1.diffuse;
-            vec3 specular = light.specular * spec * m1.specular;
-            return (ambient + diffuse + specular) * m1.objectColor ;
-        }
-        vec3 calcSpotLight(SpotLight light,vec3 normal,vec3 viewDir,vec3 fragPos,Material m1){
-            vec3 lDir = normalize(light.position - fragPos);
-            float diff = max(dot(normal,lDir),0.0);
-            vec3 vDir = viewDir;
-            vec3 halfwayDir = normalize(lDir + vDir);
-            float spec = pow(max(dot(normal,halfwayDir),0.0),m1.shininess);
-                        //vec3 reflDir = reflect(-lDir,normal);
-                        //float spec = pow(max(dot(viewDir,reflDir),0.0),m1.shininess);
-
-            vec3 ambient = light.ambient * m1.ambient;
-            vec3 diffuse = light.diffuse * diff * m1.diffuse;
-            vec3 specular = light.specular * spec * m1.specular;
-
-            float theta = dot(lDir,normalize(-light.direction));
-            float epsilon = light.cutOff - light.outerCutOff;
-            float intensity = clamp((theta - light.outerCutOff) / epsilon,0.0,1.0);//clamp()参数约束,此处range(0.0,1.0)
-            float distance = length(light.position - fragPos);
-            float attenuation = 1.0/(light.constant + light.linear * distance + light.quadratic * distance * distance);
-            if(theta > light.cutOff){
-                return (ambient + diffuse + specular) * m1.objectColor;
-            }
-            else if(theta > light.outerCutOff){
-                return (ambient + diffuse + specular) * m1.objectColor * intensity;
-            }
-            else{
-                return vec3(0.0,0.0,0.0);
-            }
-        }
-        void main() { 
-            float cos = (cos(iTime) + 1.0) * 0.5;
-            float sin = (sin(iTime) + 1.0) * 0.5;
-            vec3 norm = normalize(vNormal);//标准化法向量
-            vec3 viewDir = normalize(viewPos - fragPos);
-            
-            vec3 result = calcDirLight(dirlight_01,norm,viewDir,material_01);
-            for(int i = 0;i < POINT_LIGHTS_NUM;++i){
-                result += calcPointLight(pointlight[i],norm,viewDir,fragPos,material_01);
-            }
-            //result += calcSpotLight(SpotLight light,norm,viewDir,fragPos,material_01);
-            gl_FragColor = vec4(result,1.0) ; 
-        }
-
     </script>
     <style type="text/css">
         div#canvas-frame {
@@ -211,9 +87,10 @@
         depth: true,
     })
     renderer.setClearColor(new THREE.Color(0x66ccff))//清屏颜色,16进制值
-    renderer.setSize(600, 600)//渲染窗口大小
+    renderer.setSize(640, 640)//渲染窗口大小
+    renderer.setPixelRatio(window.devicePixelRatio * 1.2)//1.52倍分辨率渲染，之后下采样
     renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap; // default THREE.PCFShadowMap THREE.PCFSoftShadowMap THREE.VSMShadowMap
+    renderer.shadowMap.type = THREE.VSMShadowMap; // default THREE.PCFShadowMap THREE.PCFSoftShadowMap THREE.VSMShadowMap
     container = document.getElementById('wrap')
     container.appendChild(renderer.domElement)
 
@@ -228,10 +105,11 @@
     dirLight.position.set( 10, 0, 10 );
     dirLight.castShadow = true;
     scene.add( dirLight );
-    dirLight.shadow.mapSize.width = 512; // default
-    dirLight.shadow.mapSize.height = 512; // default
+    dirLight.shadow.mapSize.width =1024; // default
+    dirLight.shadow.mapSize.height =1024; // default
     dirLight.shadow.camera.near = 0.1; // default
     dirLight.shadow.camera.far = 500; // default
+    dirLight.shadow.bias = -0.001
     var shadowHelper = new THREE.CameraHelper( dirLight.shadow.camera );
     scene.add( shadowHelper );
     
@@ -291,7 +169,6 @@
         "varying vec2 vUv;",
         "void main() {",
         "vec4 tex = texture2D( tDiffuse, vUv );",
-        //"gl_FragColor = LinearTosRGB( tex );", // optional: LinearToGamma( tex, float( GAMMA_FACTOR ) );
         "gl_FragColor = vec4(pow(tex.rgb,vec3(1.0/gamma)),1.0);",
         "}"
         ].join( "\n" )
@@ -319,8 +196,53 @@
             "}"
         ].join( "\n" )
     }
+    var filmShader = {
+        uniforms: {
+        'tDiffuse': { value: null },
+        'time': { value: 0.0 },
+        'nIntensity': { value: 0.2 },//胶片颗粒强度
+        'sIntensity': { value: 0 },//扫描线效果强度
+        'sCount': { value: 3072 },//颗粒数
+        'grayscale': { value: null }//转灰阶
+        },
+
+        vertexShader: [document.getElementById('vertexshader_01').textContent].join( "\n" ),
+        fragmentShader: [
+            '#include <common>',
+            // control parameter
+            'uniform float time;',
+            'uniform bool grayscale;',
+            // noise effect intensity value (0 = no effect, 1 = full effect)
+            'uniform float nIntensity;',
+            // scanlines effect intensity value (0 = no effect, 1 = full effect)
+            'uniform float sIntensity;',
+            // scanlines effect count value (0 = no effect, 4096 = full effect)
+            'uniform float sCount;',
+            'uniform sampler2D tDiffuse;',
+            'varying vec2 vUv;',
+            'void main() {',
+            'vec4 cTextureScreen = texture2D( tDiffuse, vUv );',
+            // make some noise
+            'float dx = rand( vUv + time );',
+            // add noise
+            'vec3 cResult = cTextureScreen.rgb + cTextureScreen.rgb * clamp( 0.1 + dx, 0.0, 1.0 );',
+            // get us a sine and cosine
+            'vec2 sc = vec2( sin( vUv.y * sCount ), cos( vUv.y * sCount ) );',
+            // add scanlines
+            'cResult += cTextureScreen.rgb * vec3( sc.x, sc.y, sc.x ) * sIntensity;',
+            // interpolate between source and result by intensity
+            'cResult = cTextureScreen.rgb + clamp( nIntensity, 0.0,1.0 ) * ( cResult - cTextureScreen.rgb );',
+            // convert to grayscale if desired
+            'if( grayscale ) {',
+            'cResult = vec3( cResult.r * 0.3 + cResult.g * 0.59 + cResult.b * 0.11 );',
+            '}',
+            'gl_FragColor =  vec4( cResult, cTextureScreen.a );',
+            '}'
+        ].join( '\n' )
+    };
     var dayPass = new THREE.ShaderPass(dayShader)
     var nightPass = new THREE.ShaderPass(nightShader)
+    var filmPass = new THREE.ShaderPass(filmShader)
     var gammaPass = new THREE.ShaderPass(gammaCorr)
     var briContrastPass = new THREE.ShaderPass(brightnessContrast)
     var effectCopy = new THREE.ShaderPass(THREE.CopyShader)//复制通道,shader导入自copyshader.js
@@ -336,6 +258,7 @@
     composerDay.addPass(gammaPass)
     composerDay.addPass(briContrastPass)
     composerDay.addPass(dayPass)
+    composerDay.addPass(filmPass)
     composerDay.addPass(effectCopy)
 
     const composerNight =  new THREE.EffectComposer(renderer)
@@ -343,6 +266,7 @@
     composerNight.addPass(gammaPass)
     composerNight.addPass(briContrastPass)
     composerNight.addPass(nightPass)
+    composerNight.addPass(filmPass)
     composerNight.addPass(effectCopy)
     
     //加载模型(GLTF&DRACO)
@@ -360,7 +284,6 @@
             if ( child.isMesh ) { 
                 child.castShadow = true;
                 child.receiveShadow = true;
-                
              }
         })
         console.log("GLTF Loaded");
@@ -380,6 +303,8 @@
         mixer.update(delta);
         orbitControls.update(delta);
         
+        filmPass.uniforms["time"].value = time
+
         composer.render(delta);
         dirLight.intensity = Math.abs(sin)
         if(sin>0){
