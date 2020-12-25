@@ -86,7 +86,7 @@
     renderer.setSize(1280, 540)//渲染窗口大小
     renderer.setPixelRatio(window.devicePixelRatio * 1.2)//1.52倍分辨率渲染，之后下采样
     renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.VSMShadowMap; // default THREE.PCFShadowMap THREE.PCFSoftShadowMap THREE.VSMShadowMap
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap; // default THREE.PCFShadowMap THREE.PCFSoftShadowMap THREE.VSMShadowMap
     container = document.getElementById('wrap')
     container.appendChild(renderer.domElement)
 
