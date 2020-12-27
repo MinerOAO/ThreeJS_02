@@ -60,13 +60,13 @@
 <body>
     <div class="contain">
         <div id="wrap"></div>
+        <div id="progress" style="position: absolute;left:640px;top:640px;font-size:30px;font-style: oblique;">请稍候...</div>
     </div>
 </body>
 <script>
     var container
     var camera, scene, renderer
     var orbitControls
-    var daytime = true
     const clock = new THREE.Clock();
     
     //摄像机设置
@@ -77,35 +77,35 @@
 
     //renderer设置
     renderer = new THREE.WebGLRenderer({
-        alpha: true,
-        antialias: true,
-        precision: "highp",
-        depth: true,
+        alpha: true, //alpha test 
+        antialias: true, //反走样 抗锯齿
+        precision: "highp", //高精度
+        depth: true, //depth test 深度测试
     })
     renderer.setClearColor(new THREE.Color(0x66ccff))//清屏颜色,16进制值
     renderer.setSize(1280, 540)//渲染窗口大小
     renderer.setPixelRatio(window.devicePixelRatio * 1.2)//1.52倍分辨率渲染，之后下采样
-    renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap; // default THREE.PCFShadowMap THREE.PCFSoftShadowMap THREE.VSMShadowMap
+    renderer.shadowMap.enabled = true; //开启shadowMap
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap; //shadowMap类型// default THREE.PCFShadowMap THREE.PCFSoftShadowMap THREE.VSMShadowMap
     container = document.getElementById('wrap')
     container.appendChild(renderer.domElement)
 
     //控制设置
     orbitControls = new THREE.OrbitControls(camera, renderer.domElement)
-    orbitControls.target.set(0.0,0.5,0.0)
-    orbitControls.update()
-    orbitControls.enableDamping = true
+    orbitControls.target.set(0.0,0.5,0.0) //初识指向位置
+    orbitControls.update() 
+    orbitControls.enableDamping = true //开启阻尼
     //光照设置，添加光源
     scene.add( new THREE.HemisphereLight( 0xffffff, 0x000000, 0.1 ) );
     const dirLight = new THREE.DirectionalLight( 0xffffff, 1.0 );
     dirLight.position.set( 10, 0, 10 );
-    dirLight.castShadow = true;
+    dirLight.castShadow = true; //设置该平行光可产生阴影
     scene.add( dirLight );
-    dirLight.shadow.mapSize.width =1024; // default
-    dirLight.shadow.mapSize.height =1024; // default
-    dirLight.shadow.camera.near = 0.1; // default
-    dirLight.shadow.camera.far = 500; // default
-    dirLight.shadow.bias = -0.001
+    dirLight.shadow.mapSize.width =1024; // shadowMap大小，或阴影分辨率
+    dirLight.shadow.mapSize.height =1024; // 
+    dirLight.shadow.camera.near = 0.1; // 阴影投射近平面
+    dirLight.shadow.camera.far = 500; // 阴影投射远平面
+    dirLight.shadow.bias = -0.001 //bias，防止阴影出现类似摩尔纹的效果
     //var shadowHelper = new THREE.CameraHelper( dirLight.shadow.camera );
     //scene.add( shadowHelper );
     
@@ -266,29 +266,30 @@
     composerNight.addPass(effectCopy)
     
     //加载模型(GLTF&DRACO)
-    const dracoLoader = new THREE.DRACOLoader()
-    dracoLoader.setDecoderPath('js/draco/gltf')
+    const dracoLoader = new THREE.DRACOLoader() //用以加载部分draco压缩模型
+    dracoLoader.setDecoderPath('js/')
     let mixer
-    const loader = new THREE.GLTFLoader()
+    const loader = new THREE.GLTFLoader() //GLTF模型加载器
     var model
     loader.setDRACOLoader(dracoLoader)
-    loader.load('models/tokyo/scene.gltf',function(gltf){
-        model = gltf.scene;
-        model.position.set(1,1,0);
-        model.scale.set(0.01,0.01,0.01)
-        model.traverse(function(child){
+    loader.load('images/scene.gltf',function(gltf){
+        model = gltf.scene; 
+        model.position.set(1,1,0); //设置初始位置
+        model.scale.set(0.01,0.01,0.01) //长宽高缩放至0.01x
+        model.traverse(function(child){ //遍历模型中的Mesh
             if ( child.isMesh ) { 
-                child.castShadow = true;
-                child.receiveShadow = true;
+                child.castShadow = true; //设置该Mesh可产生阴影
+                child.receiveShadow = true; //设置该Mesh可接受阴影
              }
         })
         console.log("GLTF Loaded");
         scene.add(model)
-        mixer = new THREE.AnimationMixer(model)
-        mixer.clipAction(gltf.animations[0]).play()
-        animate()
-        },undefined,function(error){console.error(error)}
-    )
+        mixer = new THREE.AnimationMixer(model) //动画混合
+        mixer.clipAction(gltf.animations[0]).play() //播放动画
+        document.getElementById("progress").textContent = 'Done'
+        animate() //循环渲染函数
+        },undefined,function(error){console.error(error)} //抛出错误
+    )//loader.load(obj,onLoad,onProress)
 
     function animate(time) {
         time *= 0.0002
@@ -296,20 +297,20 @@
         let sin = Math.sin(time)
         requestAnimationFrame( animate );
         var delta = clock.getDelta();
-        mixer.update(delta);
-        orbitControls.update(delta);
+        mixer.update(delta); //更新动画
+        orbitControls.update(delta); //更新观察位置
         
-        filmPass.uniforms["time"].value = time
+        filmPass.uniforms["time"].value = time //作为随机数生成参数，使得噪点随机生成
 
-        composer.render(delta);
-        dirLight.intensity = Math.abs(sin)
+        composer.render(delta); //第一道后期处理
+        dirLight.intensity = Math.abs(sin) //取绝对值
         if(sin>0){
             dirLight.position.set( 10 * cos * 0.5, 10 * sin, 10 * cos * 0.5);
-            composerDay.render(delta)
+            composerDay.render(delta) //第二道后期处理
         }
         else{
             dirLight.position.set( 10 * cos * 0.5 * -1, 10 * sin * -1, 10 * cos * 0.5 * -1);
-            composerNight.render(delta)
+            composerNight.render(delta) //第二道后期处理
         }
         
     }

@@ -11083,16 +11083,16 @@
   ],
   "images": [
     {
-      "uri": "textures/normal_baseColor.jpeg"
+      "uri": "normal_baseColor.jpeg"
     },
     {
-      "uri": "textures/normal_metallicRoughness.png"
+      "uri": "normal_metallicRoughness.png"
     },
     {
-      "uri": "textures/alpha_glass_baseColor.png"
+      "uri": "alpha_glass_baseColor.png"
     },
     {
-      "uri": "textures/interiors_baseColor.jpeg"
+      "uri": "interiors_baseColor.jpeg"
     }
   ],
   "materials": [
